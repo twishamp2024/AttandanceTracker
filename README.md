@@ -10,7 +10,6 @@ back over the line — is derived from that one tap.
 
 ## Contents
 
-- [About](#about)
 - [What it does](#what-it-does)
 - [Technology stack](#technology-stack)
 - [Architecture](#architecture)
@@ -23,22 +22,6 @@ back over the line — is derived from that one tap.
 - [Export and import format](#export-and-import-format)
 - [Privacy](#privacy)
 - [Known limitations](#known-limitations)
-
----
-
-## About
-
-**Attendance** is an offline-first, privacy-respecting Android application built to make tracking college attendance effortless, fast, and mathematically exact.
-
-Most attendance apps fail because logging a class takes too many taps, or because they only present a raw percentage without explaining what that number means in practice. This app is built around a single premise: **make the common case one tap, and make the consequence of that tap immediately obvious.**
-
-### Key Highlights
-
-- **One-tap logging**: Open the app after class, tap **Present** or **Absent**, and you're done. Active classes are prioritized on the Today screen so logging takes under two seconds.
-- **Actionable projections**: Translates percentages into immediate, practical advice — *"You can miss 3 more classes"* or *"Attend the next 7 classes to reach 75%"*.
-- **100% offline & private**: Zero network permissions in `AndroidManifest.xml`. No accounts, no telemetry, no cloud dependencies. Your data never leaves your device unless you export a backup.
-- **What If? simulator**: Project the exact impact of attending or skipping upcoming sessions before making decisions, without altering your real records.
-- **Robust engineering**: Developed with modern Android standards — Jetpack Compose, Material 3, Room, Kotlin Coroutines & Flow, basis-point integer arithmetic (no floating-point rounding bugs), and zero third-party framework overhead.
 
 ---
 
