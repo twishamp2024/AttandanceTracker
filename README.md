@@ -13,6 +13,7 @@ back over the line — is derived from that one tap.
 - [What it does](#what-it-does)
 - [Technology stack](#technology-stack)
 - [Architecture](#architecture)
+- [Reusable Kotlin Library (`attendance-core`)](#reusable-kotlin-library-attendance-core)
 - [Attendance calculation rules](#attendance-calculation-rules)
 - [Database structure](#database-structure)
 - [Setup](#setup)
@@ -126,6 +127,114 @@ Key files:
 | `data/repository/SessionRepositoryImpl.kt` | Timetable → session materialisation |
 | `data/backup/BackupManager.kt` | Export, and validate-then-import |
 | `di/AppContainer.kt` | Manual dependency container |
+
+---
+
+## Reusable Kotlin Library (`attendance-core`)
+
+The attendance calculation engine, percentage representation, safe-miss calculations, what-if simulator, and eligibility logic have been extracted into a standalone, reusable Kotlin/JVM library module: `:attendance-core`.
+
+The Android application (`:app`) consumes `:attendance-core` directly as a Gradle dependency (`implementation(project(":attendance-core"))`), ensuring a single source of truth without duplicating calculation logic.
+
+### Maven Coordinates
+
+| Field | Value |
+|---|---|
+| **Group ID** | `io.github.twishamp2024` |
+| **Artifact ID** | `attendance-core` |
+| **Version** | `0.1.0` |
+| **Packaging** | `jar` (with companion `-sources.jar` and `-javadoc.jar`) |
+| **Target Runtime** | Kotlin 2.0+, JVM (Java 17+), Android API 26+ |
+| **Repository** | GitHub Packages Maven Registry |
+| **Registry URL** | `https://maven.pkg.github.com/twishamp2024/AttandanceTracker` |
+
+### Key Modules & Capabilities
+
+- **`Percent`** (`com.twisham.attendance.core.Percent`): Basis-point (1/10,000) exact integer representation. Prevents floating-point boundary errors when comparing ratios against required percentages (e.g., 39/52 vs 75%).
+- **`AttendanceCalculator`** (`com.twisham.attendance.core.AttendanceCalculator`):
+  - `meetsRequirement`: Exact integer ratio comparison.
+  - `safeMisses`: Number of consecutive future classes affordable before dropping below requirement.
+  - `classesNeededToReach`: Minimum consecutive attendances required to reach target percentage.
+  - `health`: Traffic-light classification (`SAFE`, `CAUTION`, `CRITICAL`, `NO_DATA`).
+  - `trend`: Sliding-window attendance trajectory (`IMPROVING`, `STEADY`, `DECLINING`).
+- **`AttendanceCounts`** (`com.twisham.attendance.core.AttendanceCounts`):
+  - Pure tallies across `PRESENT`, `ABSENT`, `EXCUSED`, `CANCELLED`, and `NOT_MARKED`.
+  - Configurable `ExcusedPolicy` (`IGNORE` vs `COUNT_AS_PRESENT`).
+  - Strict cancellation rule: cancelled classes never enter the denominator.
+- **`WhatIfSimulator`** (`com.twisham.attendance.core.WhatIfSimulator`):
+  - Pure projections for hypothetical future attendances and absences (`project`, `missStreak`, `attendStreak`).
+  - Zero state mutations and zero database access.
+- **`AttendanceEligibility`** (`com.twisham.attendance.core.AttendanceEligibility`):
+  - Evaluates whether session marks can be submitted (available from start time on session date, with no closing cutoff).
+
+### How to Consume the Library
+
+#### 1. GitHub Packages Authentication
+
+GitHub Packages requires authenticated requests. Generate a GitHub Personal Access Token (classic) with the `read:packages` scope (or fine-grained PAT with package read access).
+
+Provide the credentials via environment variables:
+
+```bash
+export GITHUB_ACTOR="<your-github-username>"
+export GITHUB_TOKEN="<your-github-token-with-read:packages>"
+```
+
+Or in your global `~/.gradle/gradle.properties`:
+
+```properties
+gpr.user=<your-github-username>
+gpr.key=<your-github-token-with-read:packages>
+```
+
+#### 2. Configure Gradle Repository
+
+In the consuming project's `settings.gradle.kts`:
+
+```kotlin
+dependencyResolutionManagement {
+    repositories {
+        mavenCentral()
+        maven {
+            name = "GitHubPackages"
+            url = uri("https://maven.pkg.github.com/twishamp2024/AttandanceTracker")
+            credentials {
+                username = System.getenv("GITHUB_ACTOR")
+                    ?: (findProperty("gpr.user") as? String)
+                password = System.getenv("GITHUB_TOKEN")
+                    ?: (findProperty("gpr.key") as? String)
+            }
+        }
+    }
+}
+```
+
+#### 3. Add Dependency
+
+In the consumer's `build.gradle.kts`:
+
+```kotlin
+dependencies {
+    implementation("io.github.twishamp2024:attendance-core:0.1.0")
+}
+```
+
+### Local Development and Publishing
+
+- **Run unit tests**:
+  ```bash
+  ./gradlew :attendance-core:test
+  ```
+- **Publish to local Maven cache (`~/.m2/repository`)**:
+  ```bash
+  ./gradlew :attendance-core:publishToMavenLocal
+  ```
+- **Publish to GitHub Packages** (requires token with `write:packages` scope):
+  ```bash
+  ./gradlew :attendance-core:publishMavenJavaPublicationToGitHubPackagesRepository \
+      -Pgpr.user="twishamp2024" \
+      -Pgpr.key="<GITHUB_TOKEN_WITH_WRITE_PACKAGES>"
+  ```
 
 ---
 
@@ -357,17 +466,20 @@ if and when you switch the daily reminder on.
 ./gradlew test
 ```
 
-59 tests, all pure JVM (Robolectric provides Android for the database tests, so no
+94 tests across `:attendance-core` and `:app`, all pure JVM (Robolectric provides Android for the database tests, so no
 device or emulator is needed).
 
-| Suite | Covers |
-|---|---|
-| `PercentTest` | Basis-point conversion, exact ratios, half-up rounding, 0/0 |
-| `AttendanceCalculatorTest` | 100%, 0%, exactly 75%, just below, safe misses and classes-needed verified against brute-force search, impossible 100% target, per-subject requirements, configurable caution band |
-| `AttendanceCountsTest` | Cancelled excluded, unmarked excluded, extra classes counted, both excused policies, pooling |
-| `WhatIfSimulatorTest` | Miss/attend streaks, order independence, remaining margin, negative input |
-| `DatabaseIntegrationTest` | Semester separation, editing history in place, cancel-after-the-fact, notes surviving status changes, idempotent materialisation, marks not overwritten, deletions not resurrected, duplicate rejection, cascade deletes, single-active-semester invariant, excused policy changing the reported figure |
-| `BackupTest` | Export→import round trip, merge vs replace, no duplication after import, rejection of foreign files, malformed JSON, newer format versions, unknown statuses, impossible dates, out-of-range percentages, CSV shape |
+| Module | Suite | Covers |
+|---|---|---|
+| `:attendance-core` | `PercentTest` | Basis-point conversion, exact ratios, half-up rounding, 0/0, formatting |
+| `:attendance-core` | `AttendanceCalculatorTest` | 100%, 0%, exactly 75%, just below, safe misses and classes-needed verified against brute-force search, impossible 100% target, per-subject requirements, configurable caution band |
+| `:attendance-core` | `AttendanceCountsTest` | Cancelled excluded, unmarked excluded, extra classes counted, both excused policies, pooling |
+| `:attendance-core` | `WhatIfSimulatorTest` | Miss/attend streaks, order independence, remaining margin, negative input |
+| `:attendance-core` | `AttendanceEligibilityTest` | Starting time eligibility, no closing time cutoff, past/future marks |
+| `:app` | `DatabaseIntegrationTest` | Semester separation, editing history in place, cancel-after-the-fact, notes surviving status changes, idempotent materialisation, marks not overwritten, deletions not resurrected, duplicate rejection, cascade deletes, single-active-semester invariant, excused policy changing the reported figure |
+| `:app` | `BackupTest` | Export→import round trip, merge vs replace, no duplication after import, rejection of foreign files, malformed JSON, newer format versions, unknown statuses, impossible dates, out-of-range percentages, CSV shape |
+| `:app` | `DashboardAndSubjectScreenTest` | Dashboard rendering, subject card states, navigation integration |
+| `:app` | `TodayScreenTest` | Markable state, one-tap actions, focus session |
 
 The safe-miss and classes-needed tests do not just assert an expected number — they
 replay the hypothetical to prove the boundary is exactly where the calculator says it
