@@ -21,4 +21,5 @@ dependencyResolutionManagement {
 }
 
 rootProject.name = "AttendanceTracker"
+include(":attendance-core")
 include(":app")

@@ -5,15 +5,7 @@ import com.twisham.attendance.domain.model.AttendanceTrend
 import com.twisham.attendance.domain.model.Percent
 import com.twisham.attendance.domain.model.Subject
 
-/** How many classes are needed to hit a particular target, or why that is hopeless. */
-data class TargetProjection(
-    val target: Percent,
-    /** Null when the target cannot be reached by attending future classes. */
-    val classesNeeded: Int?,
-    val alreadyMet: Boolean,
-) {
-    val isImpossible: Boolean get() = classesNeeded == null && !alreadyMet
-}
+typealias TargetProjection = com.twisham.attendance.core.TargetProjection
 
 /**
  * Everything the UI needs about one subject, computed once in the domain layer.
