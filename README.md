@@ -623,8 +623,10 @@ storage permission and the file lands wherever you chose.
 - **Rescheduling is a marker, not a move.** `SessionKind.RESCHEDULED` labels a
   session; moving a class to another day means editing or adding it.
 - **No widget or quick-settings tile.** Marking still requires opening the app.
-- **Single-module build.** Appropriate at this size; a multi-module split would pay
-  off only if the codebase grew substantially.
+- **Layers inside `:app` aren't enforced at compile time.** The attendance domain is
+  its own module, `:attendance-core`, but the app's remaining layers are separated by
+  package. Splitting `:app` further would pay off only if the codebase grew
+  substantially.
 - **Verified on Android 16 (API 36) and an emulator.** Not tested across the full
   device matrix, nor on tablets beyond the responsive layout switching to a
   navigation rail at ≥600dp.
