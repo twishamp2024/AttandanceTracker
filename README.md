@@ -147,6 +147,9 @@ The Android application (`:app`) consumes `:attendance-core` directly as a Gradl
 | **Target Runtime** | Kotlin 2.0+, JVM (Java 17+), Android API 26+ |
 | **Repository** | GitHub Packages Maven Registry |
 | **Registry URL** | `https://maven.pkg.github.com/twishamp2024/AttandanceTracker` |
+| **License** | Apache-2.0 |
+
+`attendance-core` is licensed under the [Apache License 2.0](attendance-core/LICENSE). The rest of this repository, including the Android app, is licensed under the [MIT License](LICENSE).
 
 ### Key Modules & Capabilities
 
