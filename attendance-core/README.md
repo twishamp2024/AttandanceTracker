@@ -12,6 +12,7 @@ A pure Kotlin/JVM domain engine and mathematics library for class attendance tra
 - **Artifact ID**: `attendance-core`
 - **Version**: `0.1.0`
 - **Package Registry**: GitHub Packages Maven Registry (`https://maven.pkg.github.com/twishamp2024/AttandanceTracker`)
+- **License**: Apache-2.0
 
 ---
 
@@ -125,3 +126,9 @@ Publish to GitHub Packages (requires `write:packages` scope):
     -Pgpr.user="<your-github-username>" \
     -Pgpr.key="<your-token-with-write:packages>"
 ```
+
+---
+
+## License
+
+`attendance-core` is licensed under the [Apache License 2.0](LICENSE). The Android app in the rest of this repository is licensed separately under the [MIT License](../LICENSE).
